@@ -163,7 +163,7 @@ def workoutprogram():
     cursor = conn.cursor(dictionary=True)
 
     # Fetch the user's goal
-    cursor.execute("SELECT * FROM FitnessGoal WHERE UserID = %s", (session['user_id'],))
+    cursor.execute("SELECT GoalID FROM FitnessGoal WHERE UserID = %s", (session['user_id'],))
     goal = cursor.fetchone()
 
     if not goal:
@@ -171,6 +171,8 @@ def workoutprogram():
         cursor.close()
         conn.close()
         return redirect(url_for('fitnessgoal'))
+
+    goal_id = goal['GoalID']
 
     if request.method == 'POST':
         reps = request.form['reps']
@@ -189,7 +191,7 @@ def workoutprogram():
             INSERT INTO WorkoutProgram 
             (ProgramID, UserID, GoalID, Reps, WeightUsed, CalorieBurnt, Duration, LogDate)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (new_program_id, session['user_id'], goal['GoalID'], reps, weight_used, calorie_burnt, duration, log_date))
+        """, (new_program_id, session['user_id'], goal_id, reps, weight_used, calorie_burnt, duration, log_date))
 
         conn.commit()
         flash('Workout program saved successfully!')
@@ -331,16 +333,18 @@ def myworkoutplan():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT GoalType FROM FitnessGoal WHERE UserID = %s", (session['user_id'],))
+    cursor.execute("SELECT GoalID, GoalType FROM FitnessGoal WHERE UserID = %s", (session['user_id'],))
     goal = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
     if not goal or not goal['GoalType']:
         flash('Please set your fitness goal first!')
+        cursor.close()
+        conn.close()
         return redirect(url_for('fitnessgoal'))
 
     goal_type = goal['GoalType'].lower()
+    cursor.close()
+    conn.close()
+
     if goal_type == 'basic':
         return render_template('beginner-workout-plan.html')
     elif goal_type == 'intermediate':
